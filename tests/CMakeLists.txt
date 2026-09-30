@@ -1,4 +1,8 @@
 include(GoogleTest)
+add_library(xgm_header_checks OBJECT integration/include_allocator.cpp)
+target_link_libraries(xgm_header_checks PRIVATE xgm::allocator)
+target_compile_features(xgm_header_checks PRIVATE cxx_std_17)
+xgm_warnings(xgm_header_checks)
 add_executable(xgm_tests unit/test_memory.cpp unit/test_arena.cpp unit/test_boundaries.cpp unit/test_alignment.cpp unit/baseline.c)
 set_target_properties(xgm_tests PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES C_EXTENSIONS NO CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
 target_link_libraries(xgm_tests PRIVATE xgm::allocator xgm::pool xgm::size_class xgm::arena xgm::tracking xgm::libc_allocator GTest::gtest_main)
