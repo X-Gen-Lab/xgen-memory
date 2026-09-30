@@ -68,7 +68,7 @@ xgs_status_t xgm_pool_deinit(xgm_pool_t* pool);
  * Calls require external serialization. */
 /**
  * \brief           Initialize exactly count fixed blocks in caller storage
- * \param[in,out]   pool: Caller-owned pool descriptor
+ * \param[in,out]   pool: Caller-owned descriptor, disjoint from storage
  * \param[in,out]   storage: Caller-owned block storage with the requested
  *                  alignment
  * \param[in]       storage_size: Available storage bytes
