@@ -1,0 +1,12 @@
+include_guard(GLOBAL)
+function(xgm_check_target target expected_version expected_abi result)
+    get_target_property(actual_version ${target} XGM_VERSION)
+    get_target_property(actual_abi ${target} XGM_ABI_VERSION)
+    get_target_property(actual_type ${target} TYPE)
+    if(NOT actual_version STREQUAL "${expected_version}" OR
+       NOT actual_abi STREQUAL "${expected_abi}" OR NOT actual_type STREQUAL "STATIC_LIBRARY")
+        set(${result} "${target} has incompatible version/ABI '${actual_version}/${actual_abi}'; expected '${expected_version}/${expected_abi}'" PARENT_SCOPE)
+    else()
+        set(${result} "" PARENT_SCOPE)
+    endif()
+endfunction()

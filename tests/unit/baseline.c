@@ -23,7 +23,7 @@
     } while (0)
 
 typedef struct {
-    _Alignas(max_align_t) uint8_t storage[64];
+    _Alignas(xgm_max_align_t) uint8_t storage[64];
     size_t alloc_calls;
     size_t free_calls;
     bool busy;
@@ -74,25 +74,25 @@ int baseline_allocator(void) {
     xgm_free(&b, two);
     CHECK(first.free_calls == 1U && second.free_calls == 1U);
 #ifdef XGM_TEST_LIBC
-    void* allocated = xgm_alloc(xgm_allocator_libc(), sizeof(max_align_t));
+    void* allocated = xgm_alloc(xgm_allocator_libc(), sizeof(xgm_max_align_t));
     CHECK(allocated != NULL &&
-          (uintptr_t)allocated % _Alignof(max_align_t) == 0U);
+          (uintptr_t)allocated % _Alignof(xgm_max_align_t) == 0U);
     xgm_free(xgm_allocator_libc(), allocated);
 #endif
     return 0;
 }
 
 int baseline_pool(void) {
-    _Alignas(max_align_t) uint8_t storage[256];
+    _Alignas(xgm_max_align_t) uint8_t storage[256];
     xgm_pool_t pool = {0};
-    const size_t block = 2U * sizeof(max_align_t);
+    const size_t block = 2U * sizeof(xgm_max_align_t);
     CHECK(xgm_pool_init(&pool, storage, sizeof(storage), block,
-                        _Alignof(max_align_t), 4U) == XGS_OK);
+                        _Alignof(xgm_max_align_t), 4U) == XGS_OK);
     void* allocated[4];
     for (size_t i = 0U; i < 4U; ++i) {
         allocated[i] = xgm_pool_alloc(&pool);
         CHECK(allocated[i] != NULL);
-        CHECK((uintptr_t)allocated[i] % _Alignof(max_align_t) == 0U);
+        CHECK((uintptr_t)allocated[i] % _Alignof(xgm_max_align_t) == 0U);
         memset(allocated[i], (int)(i + 1U), block);
     }
     CHECK(xgm_pool_alloc(&pool) == NULL && xgm_pool_peak_used(&pool) == 4U);
@@ -118,7 +118,7 @@ int baseline_pool(void) {
     CHECK(xgm_pool_used_count(&pool) == 0U);
     xgm_pool_t snapshot = pool;
     CHECK(xgm_pool_init(&pool, storage, sizeof(storage), block,
-                        _Alignof(max_align_t), SIZE_MAX) == XGS_CAPACITY);
+                        _Alignof(xgm_max_align_t), SIZE_MAX) == XGS_CAPACITY);
     CHECK(memcmp(&pool, &snapshot, sizeof(pool)) == 0);
     xgm_pool_deinit(&pool);
     CHECK(xgm_pool_alloc(&pool) == NULL);
@@ -126,15 +126,15 @@ int baseline_pool(void) {
 }
 
 int baseline_size_class(void) {
-    const size_t alignment = _Alignof(max_align_t);
+    const size_t alignment = _Alignof(xgm_max_align_t);
     xgm_size_class_spec_t specs[] = {
         {alignment * 4U, 1U}, {1U, 1U}, {alignment, 1U}};
     size_t required = 0U, measured_alignment = 0U;
     CHECK(xgm_size_class_measure(specs, 3U, &required, &measured_alignment) ==
           XGS_OK);
     CHECK(required == alignment * 6U && measured_alignment == alignment);
-    _Alignas(max_align_t) uint8_t storage[256];
-    _Alignas(max_align_t) uint8_t other_storage[256];
+    _Alignas(xgm_max_align_t) uint8_t storage[256];
+    _Alignas(xgm_max_align_t) uint8_t other_storage[256];
     CHECK(required <= sizeof(storage));
     xgm_pool_t pools[3] = {0}, other_pools[3] = {0};
     xgm_size_class_allocator_t allocator = {0}, other = {0};
@@ -226,7 +226,7 @@ int baseline_size_class(void) {
  * \brief           Aligned test blocks supplied without a libc allocator
  */
 typedef union {
-    max_align_t alignment;
+    xgm_max_align_t alignment;
     uint8_t bytes[2048];
 } memory_test_block_t;
 
@@ -314,7 +314,7 @@ int baseline_tracking(void) {
     const xgm_allocator_t* service =
         xgm_tracking_allocator_get_interface(&tracker);
     void* first = xgm_alloc(service, 73U);
-    CHECK(first != NULL && (uintptr_t)first % _Alignof(max_align_t) == 0U);
+    CHECK(first != NULL && (uintptr_t)first % _Alignof(xgm_max_align_t) == 0U);
     CHECK(xgm_tracking_allocator_set_phase(&tracker, 3U) == XGS_OK);
     void* second = xgm_tracking_alloc(&tracker, 9U);
     CHECK(second != NULL && first != second);

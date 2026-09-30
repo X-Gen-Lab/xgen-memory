@@ -8,7 +8,6 @@
 #include <xgen/memory/tracking_allocator.h>
 
 #include <stdint.h>
-#include <string.h>
 
 #define XGM_TRACKING_MAGIC UINT32_C(0xA110CA7E)
 
@@ -123,9 +122,9 @@ xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t* tracker,
         overlaps(tracker, sizeof(*tracker), underlying, sizeof(*underlying))) {
         return XGS_INVALID_ARGUMENT;
     }
-    memset(stats, 0, sizeof(*stats));
-    if (phase_count != 0U) {
-        memset(phases, 0, phase_count * sizeof(*phases));
+    *stats = (xgm_allocator_stats_t){0};
+    for (size_t i = 0U; i < phase_count; ++i) {
+        phases[i] = (xgm_allocator_stats_t){0};
     }
     *tracker =
         (xgm_tracking_allocator_t){{tracker, tracking_alloc, tracking_free},

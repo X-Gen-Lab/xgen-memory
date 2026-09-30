@@ -67,16 +67,14 @@ xgm_allocator_t xgm_pool_allocator(xgm_pool_t* pool) {
 
 static void store_next(void* block, void* next) {
     /* Validated pool blocks contain at least sizeof(void*) bytes. */
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-     */
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.*) */
     memcpy(block, (const void*)&next, sizeof(next));
 }
 
 static void* load_next(const void* block) {
     void* next;
     /* Read the validated block without assuming pointer alignment. */
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-     */
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.*) */
     memcpy((void*)&next, block, sizeof(next));
     return next;
 }

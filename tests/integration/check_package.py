@@ -54,7 +54,7 @@ def main():
 #include <xgen/memory/libc_allocator.h>
 #include <xgen/memory/version.h>
 int main(void) {
-    _Alignas(max_align_t) unsigned char storage[128];
+    _Alignas(xgm_max_align_t) unsigned char storage[128];
     xgm_arena_t arena;
     xgm_pool_t pools[1];
     xgm_size_class_allocator_t classes;
@@ -93,6 +93,7 @@ int main(void) {
             checks = '\nif(TARGET xgs::status OR TARGET xgm::pool)\nmessage(FATAL_ERROR "Unexpected dependency")\nendif()\n'
             consumer("installed-minimal", setup + 'find_package(xgen_memory 0.1.0 EXACT REQUIRED COMPONENTS allocator)\nset(consume xgm::allocator)' + checks, allocator_main)
             consumer("installed-default", setup + 'find_package(xgen_memory REQUIRED)\nset(consume xgm::allocator)' + checks, allocator_main)
+            consumer("installed-preexisting", setup + 'find_package(xgen_memory REQUIRED COMPONENTS allocator)\nfind_package(xgen_memory REQUIRED COMPONENTS allocator)\nset(consume xgm::allocator)' + checks, allocator_main)
             consumer("installed-optional", setup + 'find_package(xgen_memory REQUIRED COMPONENTS allocator OPTIONAL_COMPONENTS unavailable)\nset(consume xgm::allocator)' + checks, allocator_main)
             consumer("installed-missing", setup + 'find_package(xgen_memory REQUIRED COMPONENTS pool)', allocator_main, False)
             consumer("installed-unknown", setup + 'find_package(xgen_memory REQUIRED COMPONENTS unavailable)', allocator_main, False)
@@ -109,7 +110,9 @@ int main(void) {
             consumer("installed-full", setup + 'find_package(xgen_memory 0.1.0 EXACT REQUIRED COMPONENTS allocator pool size_class arena tracking libc_allocator)\nset(consume xgm::size_class xgm::arena xgm::tracking xgm::libc_allocator)', all_main)
     source_setup = f'set(XGM_COMPONENTS allocator CACHE STRING "" FORCE)\nset(CMAKE_DISABLE_FIND_PACKAGE_xgen_status TRUE)\nadd_subdirectory("{args.source.as_posix()}" memory)\nset(consume xgm::allocator)\n'
     consumer("source-minimal", source_setup, allocator_main)
-    print("12 installed package cases and minimal source consumption passed.")
+    consumer("source-preexisting", source_setup + f'add_subdirectory("{args.source.as_posix()}" memory-again)\n', allocator_main)
+    consumer("source-bad-identity", 'add_library(xgm::allocator INTERFACE IMPORTED)\n' + source_setup, allocator_main, False)
+    print("Installed and source package consumption and rejection cases passed.")
 
 
 if __name__ == "__main__":

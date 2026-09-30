@@ -33,7 +33,7 @@ void Release(void* context, void*) {
 }  // namespace
 
 TEST(Pool, InvalidInputsAndNullQueries) {
-    alignas(max_align_t) unsigned char storage[128]{};
+    alignas(16) unsigned char storage[128]{};
     xgm_pool_t pool{};
     EXPECT_EQ(xgm_pool_init(nullptr, storage, 128, 32, 16, 4),
               XGS_INVALID_ARGUMENT);

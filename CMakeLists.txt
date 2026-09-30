@@ -3,6 +3,8 @@ project(xgen_memory VERSION 0.1.0 DESCRIPTION "Bounded explicit C11 memory servi
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 set(XGM_ABI_VERSION 1)
+include(cmake/xgen_memoryCheckTarget.cmake)
+configure_file(include/xgen/memory/version.h.in generated/xgen/memory/version.h @ONLY)
 set(XGM_COMPONENTS "allocator;pool;size_class;arena;tracking" CACHE STRING "Explicit memory components; libc_allocator is opt-in")
 set(XGM_STATUS_SOURCE_DIR "" CACHE PATH "Explicit xgen-status source checkout")
 option(XGM_BUILD_TESTS "Build host GoogleTest tests" OFF)
@@ -14,6 +16,9 @@ if(XGM_ENABLE_COVERAGE AND (NOT XGM_BUILD_TESTS OR CMAKE_CROSSCOMPILING OR NOT C
     message(FATAL_ERROR "Coverage requires a GCC host test build")
 endif()
 set(_components ${XGM_COMPONENTS})
+if(XGM_BUILD_TESTS)
+    list(APPEND _components allocator pool size_class arena tracking libc_allocator)
+endif()
 foreach(component IN LISTS XGM_COMPONENTS)
     if(NOT component MATCHES "^(allocator|pool|size_class|arena|tracking|libc_allocator)$")
         message(FATAL_ERROR "Unknown memory component: ${component}")
@@ -34,6 +39,12 @@ if("pool" IN_LIST _components OR "tracking" IN_LIST _components OR "arena" IN_LI
             find_package(xgen_status 0.1.0 EXACT CONFIG REQUIRED COMPONENTS status)
         endif()
     endif()
+    get_target_property(_status_version xgs::status XGS_VERSION)
+    get_target_property(_status_abi xgs::status XGS_ABI_VERSION)
+    get_target_property(_status_type xgs::status TYPE)
+    if(NOT _status_version STREQUAL "0.1.0" OR NOT _status_abi STREQUAL "1" OR NOT _status_type STREQUAL "INTERFACE_LIBRARY")
+        message(FATAL_ERROR "xgs::status has incompatible version/ABI; expected 0.1.0/1")
+    endif()
 endif()
 function(xgm_warnings target)
     if(MSVC)
@@ -44,6 +55,13 @@ function(xgm_warnings target)
 endfunction()
 foreach(component IN ITEMS allocator pool size_class arena tracking libc_allocator)
     if(NOT component IN_LIST _components)
+        continue()
+    endif()
+    if(TARGET xgm::${component})
+        xgm_check_target(xgm::${component} "${PROJECT_VERSION}" "${XGM_ABI_VERSION}" _identity_error)
+        if(_identity_error)
+            message(FATAL_ERROR "${_identity_error}")
+        endif()
         continue()
     endif()
     set(source ${component})
@@ -59,6 +77,7 @@ foreach(component IN ITEMS allocator pool size_class arena tracking libc_allocat
     target_compile_features(xgm_${component} PUBLIC c_std_11)
     target_include_directories(xgm_${component} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
     if(NOT component MATCHES "^(allocator|arena)$")
         target_link_libraries(xgm_${component} PUBLIC xgm::allocator)
@@ -73,7 +92,22 @@ foreach(component IN ITEMS allocator pool size_class arena tracking libc_allocat
         target_compile_options(xgm_${component} PRIVATE --coverage -O0 -g)
         target_link_options(xgm_${component} INTERFACE --coverage)
     endif()
+    install(TARGETS xgm_${component} EXPORT xgenMemory-${component}Targets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(EXPORT xgenMemory-${component}Targets FILE xgenMemory-${component}Targets.cmake
+        NAMESPACE xgm:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xgen_memory)
+    install(FILES include/xgen/memory/${source}.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/xgen/memory)
 endforeach()
+configure_package_config_file(cmake/xgen_memoryConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/xgen_memoryConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xgen_memory)
+write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/xgen_memoryConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/xgen_memoryConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/xgen_memoryConfigVersion.cmake"
+    cmake/xgen_memoryCheckTarget.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/xgen_memory)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/xgen/memory/version.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/xgen/memory)
 if(XGM_BUILD_TESTS)
     enable_language(CXX)
     find_package(GTest 1.16.0 EXACT CONFIG REQUIRED)
