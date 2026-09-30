@@ -1,0 +1,4 @@
+Checks: '-*,clang-analyzer-*,bugprone-*,performance-*'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*[/\\]include[/\\]xgen[/\\]bytes[/\\].*'
+FormatStyle: file

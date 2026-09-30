@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "standard_version": "1.0.0",
+  "quality_version": "0.1.0",
+  "public_headers": [
+    "include/xgen/memory"
+  ],
+  "production_directories": [
+    "src"
+  ],
+  "quality_source": {
+    "revision": "9c957d406d935d27959babe7f01172151f9d26c1"
+  }
+}
