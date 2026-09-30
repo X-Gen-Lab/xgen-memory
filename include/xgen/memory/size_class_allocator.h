@@ -44,11 +44,19 @@ typedef struct {
     xgm_pool_t *pools;
     size_t pool_count;
     xgm_size_class_policy_t policy; /**< Exhaustion behavior. */
-    xgm_allocator_t backend; /**< Copied backend for owned storage only. */
-    void* owned_storage; /**< One owned allocation, or NULL for borrowed storage. */
     size_t used_memory; /**< Current reserved block bytes, including rounding. */
     size_t peak_memory; /**< Maximum simultaneous reserved block bytes. */
 } xgm_size_class_allocator_t;
+
+/** \brief Optional storage ownership, separate from the borrowed allocator.
+ * \note Use allocator.service for allocation and deinit_owned for destruction.
+ * State, descriptor array and backend context must remain stable until then.
+ */
+typedef struct {
+    xgm_size_class_allocator_t allocator; /**< Shared allocation engine. */
+    xgm_allocator_t backend; /**< Explicit backend copied at initialization. */
+    void* storage; /**< One backend allocation, or NULL for empty classes. */
+} xgm_size_class_owned_t;
 
 /**
  * \brief           Measure the block storage required by fixed size classes
@@ -142,9 +150,18 @@ xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
  * leaves outputs unchanged. Deinit releases owned storage after all blocks
  * are returned. Timing and ISR eligibility also depend on backend callbacks.
  */
-xgs_status_t xgm_size_class_init_owned(xgm_size_class_allocator_t* state,
+xgs_status_t xgm_size_class_init_owned(xgm_size_class_owned_t* state,
     xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_spec_t* specs,
     size_t count, const xgm_allocator_t* backend, xgm_size_class_policy_t policy);
+
+/** \brief Release owned storage after every block is returned.
+ * \param[in,out] state: Initialized owned assembly.
+ * \return XGS_OK, XGS_BUSY for live blocks, or XGS_INVALID_ARGUMENT.
+ * \note Failure preserves the assembly. Success releases exactly one backing
+ * allocation when nonempty, clears state and leaves caller descriptors owned
+ * by the caller. Backend callbacks govern timing and ISR suitability.
+ */
+xgs_status_t xgm_size_class_deinit_owned(xgm_size_class_owned_t* state);
 
 /** \brief Query current reserved block bytes, excluding descriptors.
  * \param[in] state: Initialized state, or NULL.

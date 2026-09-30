@@ -1,0 +1,12 @@
+/**
+ * \file            version.h
+ * \brief           Compile-time package and public ABI identity
+ */
+#ifndef XGM_VERSION_H
+#define XGM_VERSION_H
+#define XGM_VERSION_MAJOR @PROJECT_VERSION_MAJOR@ /**< Major version. */
+#define XGM_VERSION_MINOR @PROJECT_VERSION_MINOR@ /**< Minor version. */
+#define XGM_VERSION_PATCH @PROJECT_VERSION_PATCH@ /**< Patch version. */
+#define XGM_VERSION_STRING "@PROJECT_VERSION@" /**< Package version. */
+#define XGM_ABI_VERSION @XGM_ABI_VERSION@ /**< Public layout ABI revision. */
+#endif

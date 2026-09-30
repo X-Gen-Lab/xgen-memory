@@ -46,7 +46,7 @@ xgs_status_t xgm_pool_measure(size_t size, size_t alignment, size_t count,
  * \return XGS_OK, XGS_BUSY for outstanding blocks, or XGS_INVALID_ARGUMENT.
  * \note Failure leaves state unchanged. Storage is borrowed and is not erased.
  */
-xgs_status_t xgm_pool_close(xgm_pool_t* pool);
+xgs_status_t xgm_pool_deinit(xgm_pool_t* pool);
 
 /* Caller owns pool and storage; neither may move while initialized.
  * alignment must be a nonzero power of two, storage must be aligned, and
@@ -69,11 +69,6 @@ xgs_status_t xgm_pool_close(xgm_pool_t* pool);
  */
 xgs_status_t xgm_pool_init(xgm_pool_t *pool, void *storage, size_t storage_size,
                            size_t block_size, size_t alignment, size_t count);
-/**
- * \brief           Invalidate the pool descriptor without releasing storage
- * \param[in,out]   pool: Caller-owned pool descriptor
- */
-void xgm_pool_deinit(xgm_pool_t *pool);
 /**
  * \brief           Remove one block from the bounded free list
  * \param[in,out]   pool: Caller-owned pool descriptor

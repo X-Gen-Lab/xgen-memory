@@ -151,7 +151,7 @@ xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
     return XGS_OK;
 }
 
-xgs_status_t xgm_size_class_init_owned(xgm_size_class_allocator_t* state,
+xgs_status_t xgm_size_class_init_owned(xgm_size_class_owned_t* state,
     xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_spec_t* specs,
     size_t count, const xgm_allocator_t* backend, xgm_size_class_policy_t policy) {
     if (state == NULL || pools == NULL || !valid_policy(policy)) {
@@ -173,14 +173,14 @@ xgs_status_t xgm_size_class_init_owned(xgm_size_class_allocator_t* state,
     if (required != 0U && storage == NULL) {
         return XGS_NO_MEMORY;
     }
-    status = xgm_size_class_init_ex(state, pools, pool_capacity, specs, count,
+    status = xgm_size_class_init_ex(&state->allocator, pools, pool_capacity, specs, count,
                                     storage, required, policy);
     if (status != XGS_OK) {
         xgm_free(&copied, storage);
         return status;
     }
     state->backend = copied;
-    state->owned_storage = storage;
+    state->storage = storage;
     return XGS_OK;
 }
 
@@ -243,10 +243,22 @@ xgs_status_t xgm_size_class_deinit(xgm_size_class_allocator_t* state) {
         return XGS_BUSY;
     }
     for (size_t i = 0U; i < state->pool_count; ++i) {
-        xgm_pool_deinit(&state->pools[i]);
+        (void)xgm_pool_deinit(&state->pools[i]);
     }
-    xgm_free(&state->backend, state->owned_storage);
     *state = (xgm_size_class_allocator_t){0};
+    return XGS_OK;
+}
+
+xgs_status_t xgm_size_class_deinit_owned(xgm_size_class_owned_t* state) {
+    if (state == NULL) {
+        return XGS_INVALID_ARGUMENT;
+    }
+    xgs_status_t status = xgm_size_class_deinit(&state->allocator);
+    if (status != XGS_OK) {
+        return status;
+    }
+    xgm_free(&state->backend, state->storage);
+    *state = (xgm_size_class_owned_t){0};
     return XGS_OK;
 }
 
