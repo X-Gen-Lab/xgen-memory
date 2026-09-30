@@ -30,6 +30,11 @@ static void pool_service_free(void *ctx, void *ptr)
 
 xgm_allocator_t xgm_pool_allocator(xgm_pool_t *pool)
 {
+    if (pool == NULL || pool->storage == NULL ||
+        (uintptr_t) pool->storage % _Alignof(max_align_t) != 0U ||
+        pool->block_size % _Alignof(max_align_t) != 0U) {
+        return (xgm_allocator_t) {0};
+    }
     return (xgm_allocator_t) {pool, pool_service_alloc, pool_service_free};
 }
 

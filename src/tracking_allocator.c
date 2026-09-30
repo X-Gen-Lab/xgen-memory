@@ -25,6 +25,22 @@ typedef union {
     } value;
 } xgm_tracking_header_t;
 
+static bool overlaps(const void *left, size_t left_size,
+                     const void *right, size_t right_size)
+{
+    if (left_size == 0U || right_size == 0U) {
+        return false;
+    }
+    uintptr_t a = (uintptr_t) left;
+    uintptr_t b = (uintptr_t) right;
+    return a <= b ? b - a < left_size : a - b < right_size;
+}
+
+static size_t saturated_add(size_t value, size_t increment)
+{
+    return increment > SIZE_MAX - value ? SIZE_MAX : value + increment;
+}
+
 /**
  * \brief           Update a counter set after a successful allocation
  * \param[in,out]   stats: Counter set to update
@@ -32,9 +48,9 @@ typedef union {
  */
 static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
 {
-    stats->total_allocated += size;
+    stats->total_allocated = saturated_add(stats->total_allocated, size);
     stats->current_allocated += size;
-    stats->alloc_count++;
+    stats->alloc_count = saturated_add(stats->alloc_count, 1U);
     if (stats->current_allocated > stats->peak_allocated) {
         stats->peak_allocated = stats->current_allocated;
     }
@@ -47,10 +63,10 @@ static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
  */
 static void record_free(xgm_allocator_stats_t *stats, size_t size)
 {
-    stats->total_freed += size;
+    stats->total_freed = saturated_add(stats->total_freed, size);
     stats->current_allocated =
         stats->current_allocated >= size ? stats->current_allocated - size : 0U;
-    stats->free_count++;
+    stats->free_count = saturated_add(stats->free_count, 1U);
 }
 
 /**
@@ -97,6 +113,15 @@ xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t *tracker,
         underlying->free == NULL || stats == NULL ||
         (phase_count != 0U && phases == NULL) ||
         phase_count > SIZE_MAX / sizeof(*phases)) {
+        return XGS_INVALID_ARGUMENT;
+    }
+    size_t phase_bytes = phase_count * sizeof(*phases);
+    if (overlaps(stats, sizeof(*stats), phases, phase_bytes) ||
+        overlaps(tracker, sizeof(*tracker), stats, sizeof(*stats)) ||
+        overlaps(tracker, sizeof(*tracker), phases, phase_bytes) ||
+        overlaps(underlying, sizeof(*underlying), stats, sizeof(*stats)) ||
+        overlaps(underlying, sizeof(*underlying), phases, phase_bytes) ||
+        overlaps(tracker, sizeof(*tracker), underlying, sizeof(*underlying))) {
         return XGS_INVALID_ARGUMENT;
     }
     memset(stats, 0, sizeof(*stats));
