@@ -91,16 +91,17 @@ TEST(SizeClass, SeparateBuffersEmptyClassesAndOverlapValidation) {
     EXPECT_EQ(std::memcmp(&state, &before, sizeof(state)), 0);
 }
 TEST(SizeClass, OwnedStorageIsExplicitAndCannotBeDestroyedWithLiveBlocks) {
-    xgm_size_class_allocator_t state{};
+    xgm_size_class_owned_t owned{};
+    auto& state = owned.allocator;
     xgm_pool_t pools[2]{};
     const xgm_size_class_spec_t specs[] = {{32, 1}, {64, 1}};
-    ASSERT_EQ(xgm_size_class_init_owned(&state, pools, 2, specs, 2,
+    ASSERT_EQ(xgm_size_class_init_owned(&owned, pools, 2, specs, 2,
         xgm_allocator_libc(), XGM_SIZE_CLASS_FALLBACK), XGS_OK);
     void* value = xgm_size_class_alloc(&state, 12);
     ASSERT_NE(value, nullptr);
-    EXPECT_EQ(xgm_size_class_deinit(&state), XGS_BUSY);
+    EXPECT_EQ(xgm_size_class_deinit_owned(&owned), XGS_BUSY);
     EXPECT_EQ(xgm_size_class_free(&state, value), XGS_OK);
-    EXPECT_EQ(xgm_size_class_deinit(&state), XGS_OK);
+    EXPECT_EQ(xgm_size_class_deinit_owned(&owned), XGS_OK);
 }
 TEST(Tracking, LiveCountsSurviveResetAndDeinitRequiresNoLiveBlocks) {
     xgm_tracking_allocator_t tracker{};
@@ -133,7 +134,7 @@ TEST(Pool, CheckedCloseAndStorageMeasure) {
     ASSERT_EQ(xgm_pool_init(&pool, storage, sizeof(storage), block_size,
         alignof(max_align_t), 4), XGS_OK);
     void* value = xgm_pool_alloc(&pool);
-    EXPECT_EQ(xgm_pool_close(&pool), XGS_BUSY);
+    EXPECT_EQ(xgm_pool_deinit(&pool), XGS_BUSY);
     EXPECT_EQ(xgm_pool_free(&pool, value), XGS_OK);
-    EXPECT_EQ(xgm_pool_close(&pool), XGS_OK);
+    EXPECT_EQ(xgm_pool_deinit(&pool), XGS_OK);
 }
