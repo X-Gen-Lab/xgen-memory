@@ -9,8 +9,7 @@
 #include <string.h>
 
 xgs_status_t xgm_pool_measure(size_t size, size_t alignment, size_t count,
-    size_t* block_size, size_t* storage_size)
-{
+                              size_t* block_size, size_t* storage_size) {
     if (size == 0U || count == 0U || alignment == 0U ||
         (alignment & (alignment - 1U)) != 0U || block_size == NULL ||
         storage_size == NULL || block_size == storage_size) {
@@ -28,8 +27,7 @@ xgs_status_t xgm_pool_measure(size_t size, size_t alignment, size_t count,
     return XGS_OK;
 }
 
-xgs_status_t xgm_pool_deinit(xgm_pool_t* pool)
-{
+xgs_status_t xgm_pool_deinit(xgm_pool_t* pool) {
     if (pool == NULL || pool->storage == NULL) {
         return XGS_INVALID_ARGUMENT;
     }
@@ -43,9 +41,8 @@ xgs_status_t xgm_pool_deinit(xgm_pool_t* pool)
 /**
  * \brief           Allocate one pool block for a fitting byte request
  */
-static void *pool_service_alloc(void *ctx, size_t size)
-{
-    xgm_pool_t *pool = ctx;
+static void* pool_service_alloc(void* ctx, size_t size) {
+    xgm_pool_t* pool = ctx;
     if (pool == NULL || size == 0U || size > pool->block_size) {
         return NULL;
     }
@@ -55,39 +52,40 @@ static void *pool_service_alloc(void *ctx, size_t size)
 /**
  * \brief           Release an allocation to its explicit pool context
  */
-static void pool_service_free(void *ctx, void *ptr)
-{
-    (void) xgm_pool_free(ctx, ptr);
+static void pool_service_free(void* ctx, void* ptr) {
+    (void)xgm_pool_free(ctx, ptr);
 }
 
-xgm_allocator_t xgm_pool_allocator(xgm_pool_t *pool)
-{
+xgm_allocator_t xgm_pool_allocator(xgm_pool_t* pool) {
     if (pool == NULL || pool->storage == NULL ||
-        (uintptr_t) pool->storage % _Alignof(max_align_t) != 0U ||
-        pool->block_size % _Alignof(max_align_t) != 0U) {
-        return (xgm_allocator_t) {0};
+        (uintptr_t)pool->storage % _Alignof(xgm_max_align_t) != 0U ||
+        pool->block_size % _Alignof(xgm_max_align_t) != 0U) {
+        return (xgm_allocator_t){0};
     }
-    return (xgm_allocator_t) {pool, pool_service_alloc, pool_service_free};
+    return (xgm_allocator_t){pool, pool_service_alloc, pool_service_free};
 }
 
-static void store_next(void *block, void *next)
-{
-    memcpy(block, &next, sizeof(next));
+static void store_next(void* block, void* next) {
+    /* Validated pool blocks contain at least sizeof(void*) bytes. */
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+     */
+    memcpy(block, (const void*)&next, sizeof(next));
 }
 
-static void *load_next(const void *block)
-{
-    void *next;
-    memcpy(&next, block, sizeof(next));
+static void* load_next(const void* block) {
+    void* next;
+    /* Read the validated block without assuming pointer alignment. */
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+     */
+    memcpy((void*)&next, block, sizeof(next));
     return next;
 }
 
-xgs_status_t xgm_pool_init(xgm_pool_t *pool, void *storage, size_t storage_size,
-                           size_t block_size, size_t alignment, size_t count)
-{
+xgs_status_t xgm_pool_init(xgm_pool_t* pool, void* storage, size_t storage_size,
+                           size_t block_size, size_t alignment, size_t count) {
     if (pool == NULL || storage == NULL || alignment == 0U ||
-        (alignment & (alignment - 1U)) != 0U || block_size < sizeof(void *) ||
-        block_size % alignment != 0U || (uintptr_t) storage % alignment != 0U ||
+        (alignment & (alignment - 1U)) != 0U || block_size < sizeof(void*) ||
+        block_size % alignment != 0U || (uintptr_t)storage % alignment != 0U ||
         count == 0U) {
         return XGS_INVALID_ARGUMENT;
     }
@@ -96,9 +94,9 @@ xgs_status_t xgm_pool_init(xgm_pool_t *pool, void *storage, size_t storage_size,
     }
 
     xgm_pool_t initialized = {
-        (uint8_t *) storage, NULL, block_size, count, count, 0U};
+        (uint8_t*)storage, NULL, block_size, count, count, 0U};
     for (size_t i = 0U; i < count; ++i) {
-        void *block = initialized.storage + i * block_size;
+        void* block = initialized.storage + i * block_size;
         store_next(block, initialized.free_list);
         initialized.free_list = block;
     }
@@ -106,12 +104,11 @@ xgs_status_t xgm_pool_init(xgm_pool_t *pool, void *storage, size_t storage_size,
     return XGS_OK;
 }
 
-void *xgm_pool_alloc(xgm_pool_t *pool)
-{
+void* xgm_pool_alloc(xgm_pool_t* pool) {
     if (pool == NULL || pool->free_list == NULL || pool->free_count == 0U) {
         return NULL;
     }
-    void *block = pool->free_list;
+    void* block = pool->free_list;
     pool->free_list = load_next(block);
     --pool->free_count;
     size_t used = pool->block_count - pool->free_count;
@@ -121,15 +118,14 @@ void *xgm_pool_alloc(xgm_pool_t *pool)
     return block;
 }
 
-bool xgm_pool_contains(const xgm_pool_t *pool, const void *ptr)
-{
+bool xgm_pool_contains(const xgm_pool_t* pool, const void* ptr) {
     if (pool == NULL || pool->storage == NULL || ptr == NULL ||
         pool->block_size == 0U ||
         pool->block_count > SIZE_MAX / pool->block_size) {
         return false;
     }
-    uintptr_t address = (uintptr_t) ptr;
-    uintptr_t start = (uintptr_t) pool->storage;
+    uintptr_t address = (uintptr_t)ptr;
+    uintptr_t start = (uintptr_t)pool->storage;
     if (address < start) {
         return false;
     }
@@ -138,8 +134,7 @@ bool xgm_pool_contains(const xgm_pool_t *pool, const void *ptr)
            offset % pool->block_size == 0U;
 }
 
-xgs_status_t xgm_pool_free(xgm_pool_t *pool, void *ptr)
-{
+xgs_status_t xgm_pool_free(xgm_pool_t* pool, void* ptr) {
     if (pool == NULL || pool->storage == NULL) {
         return XGS_INVALID_ARGUMENT;
     }
@@ -150,7 +145,7 @@ xgs_status_t xgm_pool_free(xgm_pool_t *pool, void *ptr)
         return XGS_INVALID_ARGUMENT;
     }
 
-    void *current = pool->free_list;
+    void* current = pool->free_list;
     for (size_t scanned = 0U; current != NULL && scanned < pool->block_count;
          ++scanned) {
         if (current == ptr) {
@@ -167,23 +162,19 @@ xgs_status_t xgm_pool_free(xgm_pool_t *pool, void *ptr)
     return XGS_OK;
 }
 
-size_t xgm_pool_free_count(const xgm_pool_t *pool)
-{
+size_t xgm_pool_free_count(const xgm_pool_t* pool) {
     return pool == NULL ? 0U : pool->free_count;
 }
 
-size_t xgm_pool_used_count(const xgm_pool_t *pool)
-{
+size_t xgm_pool_used_count(const xgm_pool_t* pool) {
     return pool == NULL ? 0U : pool->block_count - pool->free_count;
 }
 
-size_t xgm_pool_peak_used(const xgm_pool_t *pool)
-{
+size_t xgm_pool_peak_used(const xgm_pool_t* pool) {
     return pool == NULL ? 0U : pool->peak_used;
 }
 
-void xgm_pool_reset_stats(xgm_pool_t *pool)
-{
+void xgm_pool_reset_stats(xgm_pool_t* pool) {
     if (pool != NULL) {
         pool->peak_used = xgm_pool_used_count(pool);
     }

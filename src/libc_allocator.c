@@ -8,20 +8,19 @@
 
 #include <stdlib.h>
 
-static void *libc_alloc(void *ctx, size_t size)
-{
-    (void) ctx;
+static void* libc_alloc(void* ctx, size_t size) {
+    (void)ctx;
     return size == 0U ? NULL : malloc(size);
 }
 
-static void libc_free(void *ctx, void *ptr)
-{
-    (void) ctx;
+/* Fixed allocator callback ABI. */
+/* NOLINTNEXTLINE(bugprone-easily-swappable-parameters) */
+static void libc_free(void* ctx, void* ptr) {
+    (void)ctx;
     free(ptr);
 }
 
-const xgm_allocator_t *xgm_allocator_libc(void)
-{
+const xgm_allocator_t* xgm_allocator_libc(void) {
     static const xgm_allocator_t allocator = {NULL, libc_alloc, libc_free};
     return &allocator;
 }

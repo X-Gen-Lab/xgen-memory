@@ -15,11 +15,13 @@ static xgs_status_t layout(size_t size, size_t count, size_t* block,
         *bytes = 0U;
         return XGS_OK;
     }
-    return xgm_pool_measure(size, _Alignof(max_align_t), count, block, bytes);
+    return xgm_pool_measure(size, _Alignof(xgm_max_align_t), count, block,
+                            bytes);
 }
 
 xgs_status_t xgm_size_class_measure(const xgm_size_class_spec_t* specs,
-    size_t count, size_t* storage_size, size_t* storage_alignment) {
+                                    size_t count, size_t* storage_size,
+                                    size_t* storage_alignment) {
     if (specs == NULL || count == 0U || storage_size == NULL ||
         storage_alignment == NULL || storage_size == storage_alignment) {
         return XGS_INVALID_ARGUMENT;
@@ -27,8 +29,8 @@ xgs_status_t xgm_size_class_measure(const xgm_size_class_spec_t* specs,
     size_t total = 0U;
     for (size_t i = 0U; i < count; ++i) {
         size_t block, bytes;
-        xgs_status_t status = layout(specs[i].block_size, specs[i].block_count,
-                                    &block, &bytes);
+        xgs_status_t status =
+            layout(specs[i].block_size, specs[i].block_count, &block, &bytes);
         if (status != XGS_OK) {
             return status;
         }
@@ -38,7 +40,7 @@ xgs_status_t xgm_size_class_measure(const xgm_size_class_spec_t* specs,
         total += bytes;
     }
     *storage_size = total;
-    *storage_alignment = _Alignof(max_align_t);
+    *storage_alignment = _Alignof(xgm_max_align_t);
     return XGS_OK;
 }
 
@@ -48,8 +50,9 @@ static void* service_alloc(void* ctx, size_t size) {
 static void service_free(void* ctx, void* ptr) {
     (void)xgm_size_class_free(ctx, ptr);
 }
-static void finish_init(xgm_size_class_allocator_t* state, xgm_pool_t* pools,
-                        size_t count, xgm_size_class_policy_t policy) {
+static void finish_init(xgm_size_class_policy_t policy,
+                        xgm_size_class_allocator_t* state, xgm_pool_t* pools,
+                        size_t count) {
     *state = (xgm_size_class_allocator_t){0};
     state->service = (xgm_allocator_t){state, service_alloc, service_free};
     state->pools = pools;
@@ -57,18 +60,25 @@ static void finish_init(xgm_size_class_allocator_t* state, xgm_pool_t* pools,
     state->policy = policy;
 }
 
+/* The C enum policy is range-checked; storage size follows the borrowed API. */
+/* NOLINTBEGIN(bugprone-easily-swappable-parameters) */
 xgs_status_t xgm_size_class_init_ex(xgm_size_class_allocator_t* state,
-    xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_spec_t* specs,
-    size_t count, void* storage, size_t storage_size, xgm_size_class_policy_t policy) {
+                                    xgm_pool_t* pools, size_t pool_capacity,
+                                    const xgm_size_class_spec_t* specs,
+                                    size_t count, void* storage,
+                                    size_t storage_size,
+                                    xgm_size_class_policy_t policy) {
     if (state == NULL || pools == NULL || !valid_policy(policy)) {
         return XGS_INVALID_ARGUMENT;
     }
     size_t required, alignment;
-    xgs_status_t status = xgm_size_class_measure(specs, count, &required, &alignment);
+    xgs_status_t status =
+        xgm_size_class_measure(specs, count, &required, &alignment);
     if (status != XGS_OK) {
         return status;
     }
-    if (required != 0U && (storage == NULL || (uintptr_t)storage % alignment != 0U)) {
+    if (required != 0U &&
+        (storage == NULL || (uintptr_t)storage % alignment != 0U)) {
         return XGS_INVALID_ARGUMENT;
     }
     if (pool_capacity < count || storage_size < required) {
@@ -86,20 +96,26 @@ xgs_status_t xgm_size_class_init_ex(xgm_size_class_allocator_t* state,
             cursor += bytes;
         }
     }
-    finish_init(state, pools, count, policy);
+    finish_init(policy, state, pools, count);
     return XGS_OK;
 }
+/* NOLINTEND(bugprone-easily-swappable-parameters) */
 
 xgs_status_t xgm_size_class_init(xgm_size_class_allocator_t* state,
-    xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_spec_t* specs,
-    size_t count, void* storage, size_t storage_size) {
+                                 xgm_pool_t* pools, size_t pool_capacity,
+                                 const xgm_size_class_spec_t* specs,
+                                 size_t count, void* storage,
+                                 size_t storage_size) {
     return xgm_size_class_init_ex(state, pools, pool_capacity, specs, count,
                                   storage, storage_size, XGM_SIZE_CLASS_STRICT);
 }
 
 xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
-    xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_buffer_t* buffers,
-    size_t count, xgm_size_class_policy_t policy) {
+                                         xgm_pool_t* pools,
+                                         size_t pool_capacity,
+                                         const xgm_size_class_buffer_t* buffers,
+                                         size_t count,
+                                         xgm_size_class_policy_t policy) {
     if (state == NULL || pools == NULL || buffers == NULL || count == 0U ||
         !valid_policy(policy)) {
         return XGS_INVALID_ARGUMENT;
@@ -110,8 +126,8 @@ xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
     size_t total = 0U;
     for (size_t i = 0U; i < count; ++i) {
         size_t block, bytes;
-        xgs_status_t status = layout(buffers[i].block_size, buffers[i].block_count,
-                                    &block, &bytes);
+        xgs_status_t status = layout(buffers[i].block_size,
+                                     buffers[i].block_count, &block, &bytes);
         if (status != XGS_OK) {
             return status;
         }
@@ -119,7 +135,8 @@ xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
             continue;
         }
         uintptr_t address = (uintptr_t)buffers[i].storage;
-        if (buffers[i].storage == NULL || address % _Alignof(max_align_t) != 0U) {
+        if (buffers[i].storage == NULL ||
+            address % _Alignof(xgm_max_align_t) != 0U) {
             return XGS_INVALID_ARGUMENT;
         }
         if (bytes > buffers[i].storage_size || bytes > SIZE_MAX - total ||
@@ -133,32 +150,39 @@ xgs_status_t xgm_size_class_init_buffers(xgm_size_class_allocator_t* state,
                          &other_block, &other_bytes);
             uintptr_t other = (uintptr_t)buffers[j].storage;
             if (other_bytes != 0U &&
-                (address <= other ? other - address < bytes : address - other < other_bytes)) {
+                (address <= other ? other - address < bytes
+                                  : address - other < other_bytes)) {
                 return XGS_INVALID_ARGUMENT;
             }
         }
     }
     for (size_t i = 0U; i < count; ++i) {
         size_t block = 0U, bytes = 0U;
-        (void)layout(buffers[i].block_size, buffers[i].block_count, &block, &bytes);
+        (void)layout(buffers[i].block_size, buffers[i].block_count, &block,
+                     &bytes);
         pools[i] = (xgm_pool_t){0};
         if (bytes != 0U) {
             (void)xgm_pool_init(&pools[i], buffers[i].storage, bytes, block,
-                                _Alignof(max_align_t), buffers[i].block_count);
+                                _Alignof(xgm_max_align_t),
+                                buffers[i].block_count);
         }
     }
-    finish_init(state, pools, count, policy);
+    finish_init(policy, state, pools, count);
     return XGS_OK;
 }
 
 xgs_status_t xgm_size_class_init_owned(xgm_size_class_owned_t* state,
-    xgm_pool_t* pools, size_t pool_capacity, const xgm_size_class_spec_t* specs,
-    size_t count, const xgm_allocator_t* backend, xgm_size_class_policy_t policy) {
+                                       xgm_pool_t* pools, size_t pool_capacity,
+                                       const xgm_size_class_spec_t* specs,
+                                       size_t count,
+                                       const xgm_allocator_t* backend,
+                                       xgm_size_class_policy_t policy) {
     if (state == NULL || pools == NULL || !valid_policy(policy)) {
         return XGS_INVALID_ARGUMENT;
     }
     size_t required, alignment;
-    xgs_status_t status = xgm_size_class_measure(specs, count, &required, &alignment);
+    xgs_status_t status =
+        xgm_size_class_measure(specs, count, &required, &alignment);
     if (status != XGS_OK) {
         return status;
     }
@@ -173,8 +197,8 @@ xgs_status_t xgm_size_class_init_owned(xgm_size_class_owned_t* state,
     if (required != 0U && storage == NULL) {
         return XGS_NO_MEMORY;
     }
-    status = xgm_size_class_init_ex(&state->allocator, pools, pool_capacity, specs, count,
-                                    storage, required, policy);
+    status = xgm_size_class_init_ex(&state->allocator, pools, pool_capacity,
+                                    specs, count, storage, required, policy);
     if (status != XGS_OK) {
         xgm_free(&copied, storage);
         return status;
@@ -192,8 +216,10 @@ void* xgm_size_class_alloc(xgm_size_class_allocator_t* state, size_t size) {
     for (size_t i = 0U; i < state->pool_count; ++i) {
         xgm_pool_t* pool = &state->pools[i];
         if (pool->block_count != 0U && pool->block_size >= size &&
-            (state->policy == XGM_SIZE_CLASS_STRICT || pool->free_count != 0U) &&
-            (selected == SIZE_MAX || pool->block_size < state->pools[selected].block_size)) {
+            (state->policy == XGM_SIZE_CLASS_STRICT ||
+             pool->free_count != 0U) &&
+            (selected == SIZE_MAX ||
+             pool->block_size < state->pools[selected].block_size)) {
             selected = i;
         }
     }

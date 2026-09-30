@@ -16,28 +16,27 @@
  * \brief           Aligned private prefix placed before returned storage
  */
 typedef union {
-    max_align_t alignment;
+    xgm_max_align_t alignment;
     struct {
-        xgm_tracking_allocator_t *owner;
+        xgm_tracking_allocator_t* owner;
         size_t size;
         size_t phase;
         uint32_t magic;
     } value;
 } xgm_tracking_header_t;
 
-static bool overlaps(const void *left, size_t left_size,
-                     const void *right, size_t right_size)
-{
+static bool overlaps(const void* left, size_t left_size, const void* right,
+                     size_t right_size) {
     if (left_size == 0U || right_size == 0U) {
         return false;
     }
-    uintptr_t a = (uintptr_t) left;
-    uintptr_t b = (uintptr_t) right;
+    uintptr_t a = (uintptr_t)left;
+    uintptr_t b = (uintptr_t)right;
     return a <= b ? b - a < left_size : a - b < right_size;
 }
 
-static size_t saturated_add(xgm_allocator_stats_t* stats, size_t value, size_t increment)
-{
+static size_t saturated_add(xgm_allocator_stats_t* stats, size_t value,
+                            size_t increment) {
     if (increment > SIZE_MAX - value) {
         stats->saturated = true;
         return SIZE_MAX;
@@ -50,8 +49,7 @@ static size_t saturated_add(xgm_allocator_stats_t* stats, size_t value, size_t i
  * \param[in,out]   stats: Counter set to update
  * \param[in]       size: Number of requested bytes
  */
-static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
-{
+static void record_alloc(xgm_allocator_stats_t* stats, size_t size) {
     stats->total_allocated = saturated_add(stats, stats->total_allocated, size);
     stats->current_allocated += size;
     stats->alloc_count = saturated_add(stats, stats->alloc_count, 1U);
@@ -66,8 +64,7 @@ static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
  * \param[in,out]   stats: Counter set to update
  * \param[in]       size: Number of requested bytes originally allocated
  */
-static void record_free(xgm_allocator_stats_t *stats, size_t size)
-{
+static void record_free(xgm_allocator_stats_t* stats, size_t size) {
     stats->total_freed = saturated_add(stats, stats->total_freed, size);
     stats->current_allocated -= size;
     stats->free_count = saturated_add(stats, stats->free_count, 1U);
@@ -78,8 +75,7 @@ static void record_free(xgm_allocator_stats_t *stats, size_t size)
  * \brief           Preserve live bytes while clearing historical counters
  * \param[in,out]   stats: Counter set to reset
  */
-static void reset_stats(xgm_allocator_stats_t *stats)
-{
+static void reset_stats(xgm_allocator_stats_t* stats) {
     stats->total_allocated = stats->current_allocated;
     stats->total_freed = 0U;
     stats->peak_allocated = stats->current_allocated;
@@ -94,8 +90,7 @@ static void reset_stats(xgm_allocator_stats_t *stats)
  * \param[in]       size: Requested byte count
  * \return          Tracked allocation, or NULL on failure
  */
-static void *tracking_alloc(void *ctx, size_t size)
-{
+static void* tracking_alloc(void* ctx, size_t size) {
     return xgm_tracking_alloc(ctx, size);
 }
 
@@ -104,17 +99,15 @@ static void *tracking_alloc(void *ctx, size_t size)
  * \param[in,out]   ctx: Tracking state
  * \param[in]       ptr: Live tracked allocation, or NULL
  */
-static void tracking_free(void *ctx, void *ptr)
-{
+static void tracking_free(void* ctx, void* ptr) {
     xgm_tracking_free(ctx, ptr);
 }
 
-xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t *tracker,
-                                         const xgm_allocator_t *underlying,
-                                         xgm_allocator_stats_t *stats,
-                                         xgm_allocator_stats_t *phases,
-                                         size_t phase_count)
-{
+xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t* tracker,
+                                         const xgm_allocator_t* underlying,
+                                         xgm_allocator_stats_t* stats,
+                                         xgm_allocator_stats_t* phases,
+                                         size_t phase_count) {
     if (tracker == NULL || underlying == NULL || underlying->alloc == NULL ||
         underlying->free == NULL || stats == NULL ||
         (phase_count != 0U && phases == NULL) ||
@@ -135,17 +128,16 @@ xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t *tracker,
         memset(phases, 0, phase_count * sizeof(*phases));
     }
     *tracker =
-        (xgm_tracking_allocator_t) {{tracker, tracking_alloc, tracking_free},
-                                    *underlying,
-                                    stats,
-                                    phases,
-                                    phase_count,
-                                    0U};
+        (xgm_tracking_allocator_t){{tracker, tracking_alloc, tracking_free},
+                                   *underlying,
+                                   stats,
+                                   phases,
+                                   phase_count,
+                                   0U};
     return XGS_OK;
 }
 
-void *xgm_tracking_alloc(xgm_tracking_allocator_t *tracker, size_t size)
-{
+void* xgm_tracking_alloc(xgm_tracking_allocator_t* tracker, size_t size) {
     if (tracker == NULL || tracker->stats == NULL || size == 0U ||
         size > SIZE_MAX - sizeof(xgm_tracking_header_t) ||
         size > SIZE_MAX - tracker->stats->current_allocated ||
@@ -153,11 +145,12 @@ void *xgm_tracking_alloc(xgm_tracking_allocator_t *tracker, size_t size)
         return NULL;
     }
     if (tracker->phase_count != 0U &&
-        (size > SIZE_MAX - tracker->phases[tracker->current_phase].current_allocated ||
+        (size > SIZE_MAX -
+                    tracker->phases[tracker->current_phase].current_allocated ||
          tracker->phases[tracker->current_phase].live_blocks == SIZE_MAX)) {
         return NULL;
     }
-    xgm_tracking_header_t *header =
+    xgm_tracking_header_t* header =
         xgm_alloc(&tracker->underlying, sizeof(*header) + size);
     if (header == NULL) {
         return NULL;
@@ -173,12 +166,11 @@ void *xgm_tracking_alloc(xgm_tracking_allocator_t *tracker, size_t size)
     return header + 1;
 }
 
-void xgm_tracking_free(xgm_tracking_allocator_t *tracker, void *ptr)
-{
+void xgm_tracking_free(xgm_tracking_allocator_t* tracker, void* ptr) {
     if (tracker == NULL || tracker->stats == NULL || ptr == NULL) {
         return;
     }
-    xgm_tracking_header_t *header = (xgm_tracking_header_t *) ptr - 1;
+    xgm_tracking_header_t* header = (xgm_tracking_header_t*)ptr - 1;
     if (header->value.magic != XGM_TRACKING_MAGIC ||
         header->value.owner != tracker) {
         return;
@@ -191,9 +183,8 @@ void xgm_tracking_free(xgm_tracking_allocator_t *tracker, void *ptr)
     xgm_free(&tracker->underlying, header);
 }
 
-xgs_status_t xgm_tracking_allocator_set_phase(xgm_tracking_allocator_t *tracker,
-                                              size_t phase)
-{
+xgs_status_t xgm_tracking_allocator_set_phase(xgm_tracking_allocator_t* tracker,
+                                              size_t phase) {
     if (tracker == NULL || tracker->stats == NULL ||
         phase >= tracker->phase_count) {
         return XGS_INVALID_ARGUMENT;
@@ -202,8 +193,7 @@ xgs_status_t xgm_tracking_allocator_set_phase(xgm_tracking_allocator_t *tracker,
     return XGS_OK;
 }
 
-void xgm_tracking_allocator_reset_stats(xgm_tracking_allocator_t *tracker)
-{
+void xgm_tracking_allocator_reset_stats(xgm_tracking_allocator_t* tracker) {
     if (tracker == NULL || tracker->stats == NULL) {
         return;
     }
@@ -213,19 +203,16 @@ void xgm_tracking_allocator_reset_stats(xgm_tracking_allocator_t *tracker)
     }
 }
 
-const xgm_allocator_t *
-xgm_tracking_allocator_get_interface(xgm_tracking_allocator_t *tracker)
-{
+const xgm_allocator_t*
+xgm_tracking_allocator_get_interface(xgm_tracking_allocator_t* tracker) {
     return tracker != NULL && tracker->stats != NULL ? &tracker->service : NULL;
 }
 
-size_t xgm_tracking_overhead(void)
-{
+size_t xgm_tracking_overhead(void) {
     return sizeof(xgm_tracking_header_t);
 }
 
-xgs_status_t xgm_tracking_allocator_deinit(xgm_tracking_allocator_t* tracker)
-{
+xgs_status_t xgm_tracking_allocator_deinit(xgm_tracking_allocator_t* tracker) {
     if (tracker == NULL || tracker->stats == NULL) {
         return XGS_INVALID_ARGUMENT;
     }

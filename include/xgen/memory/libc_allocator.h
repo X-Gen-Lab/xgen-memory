@@ -18,7 +18,7 @@ extern "C" {
  * \brief           Obtain the explicitly linked libc allocator service
  * \return          Process-lifetime allocator descriptor
  */
-const xgm_allocator_t *xgm_allocator_libc(void);
+const xgm_allocator_t* xgm_allocator_libc(void);
 
 #ifdef __cplusplus
 }

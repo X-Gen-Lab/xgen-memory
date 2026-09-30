@@ -4,7 +4,8 @@
  */
 #include <xgen/memory/arena.h>
 
-xgs_status_t xgm_arena_init(xgm_arena_t* arena, void* storage, size_t capacity) {
+xgs_status_t xgm_arena_init(xgm_arena_t* arena, void* storage,
+                            size_t capacity) {
     if (arena == NULL || (storage == NULL && capacity != 0U)) {
         return XGS_INVALID_ARGUMENT;
     }
