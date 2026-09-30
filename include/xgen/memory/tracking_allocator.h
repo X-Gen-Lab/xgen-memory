@@ -25,6 +25,8 @@ typedef struct {
     size_t peak_allocated;    /**< Highest current allocation count in bytes */
     size_t alloc_count;       /**< Successful allocations */
     size_t free_count;        /**< Successful releases */
+    size_t live_blocks;       /**< Exact outstanding blocks; preserved by reset. */
+    bool saturated;          /**< A historical counter saturated since reset. */
 } xgm_allocator_stats_t;
 
 /**
@@ -43,6 +45,21 @@ typedef struct {
     size_t phase_count;   /**< Number of available phase counters */
     size_t current_phase; /**< Phase assigned to the next allocation */
 } xgm_tracking_allocator_t;
+
+/**
+ * \brief Query the private prefix bytes added to each backend request.
+ * \return Maximum-aligned header size; backend rounding is not included.
+ * \note Backend request size equals requested payload plus this value.
+ */
+size_t xgm_tracking_overhead(void);
+
+/**
+ * \brief Invalidate tracking state only after all live blocks are returned.
+ * \param[in,out] tracker: Initialized state.
+ * \return XGS_OK, XGS_BUSY for live blocks, or XGS_INVALID_ARGUMENT.
+ * \note Does not free caller-owned statistics. Failure leaves state unchanged.
+ */
+xgs_status_t xgm_tracking_allocator_deinit(xgm_tracking_allocator_t* tracker);
 
 /**
  * \brief           Initialize an allocation tracker without allocating

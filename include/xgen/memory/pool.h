@@ -27,6 +27,27 @@ typedef struct {
     size_t peak_used;
 } xgm_pool_t;
 
+/**
+ * \brief Calculate aligned blocks and required storage without allocating.
+ * \param[in] size: Nonzero requested bytes per block.
+ * \param[in] alignment: Nonzero power-of-two alignment.
+ * \param[in] count: Nonzero block count.
+ * \param[out] block_size: Rounded size, at least sizeof(void*).
+ * \param[out] storage_size: Total storage bytes, distinct from block_size.
+ * \return XGS_OK, XGS_INVALID_ARGUMENT, or XGS_CAPACITY on overflow.
+ * \note Outputs remain unchanged on failure. Constant work, no retained state.
+ */
+xgs_status_t xgm_pool_measure(size_t size, size_t alignment, size_t count,
+    size_t* block_size, size_t* storage_size);
+
+/**
+ * \brief Close an initialized pool only when no allocations remain.
+ * \param[in,out] pool: Initialized descriptor.
+ * \return XGS_OK, XGS_BUSY for outstanding blocks, or XGS_INVALID_ARGUMENT.
+ * \note Failure leaves state unchanged. Storage is borrowed and is not erased.
+ */
+xgs_status_t xgm_pool_close(xgm_pool_t* pool);
+
 /* Caller owns pool and storage; neither may move while initialized.
  * alignment must be a nonzero power of two, storage must be aligned, and
  * block_size must be a multiple of alignment and at least sizeof(void *).

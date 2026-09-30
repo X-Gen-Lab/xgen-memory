@@ -218,10 +218,12 @@ int baseline_size_class(void)
     invalid = (xgm_size_class_spec_t) {0U, 1U};
     CHECK(xgm_size_class_measure(&invalid, 1U, &size_out, &alignment_out) ==
           XGS_INVALID_ARGUMENT);
+    CHECK(size_out == 71U && alignment_out == 73U);
+    /* Disabled classes are intentionally accepted by the unified engine. */
     invalid = (xgm_size_class_spec_t) {1U, 0U};
     CHECK(xgm_size_class_measure(&invalid, 1U, &size_out, &alignment_out) ==
-          XGS_INVALID_ARGUMENT);
-    CHECK(size_out == 71U && alignment_out == 73U);
+          XGS_OK);
+    CHECK(size_out == 0U && alignment_out == alignment);
     return 0;
 }
 

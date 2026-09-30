@@ -8,6 +8,38 @@
 
 #include <string.h>
 
+xgs_status_t xgm_pool_measure(size_t size, size_t alignment, size_t count,
+    size_t* block_size, size_t* storage_size)
+{
+    if (size == 0U || count == 0U || alignment == 0U ||
+        (alignment & (alignment - 1U)) != 0U || block_size == NULL ||
+        storage_size == NULL || block_size == storage_size) {
+        return XGS_INVALID_ARGUMENT;
+    }
+    if (size < sizeof(void*)) {
+        size = sizeof(void*);
+    }
+    size_t padding = (alignment - size % alignment) % alignment;
+    if (size > SIZE_MAX - padding || count > SIZE_MAX / (size + padding)) {
+        return XGS_CAPACITY;
+    }
+    *block_size = size + padding;
+    *storage_size = *block_size * count;
+    return XGS_OK;
+}
+
+xgs_status_t xgm_pool_close(xgm_pool_t* pool)
+{
+    if (pool == NULL || pool->storage == NULL) {
+        return XGS_INVALID_ARGUMENT;
+    }
+    if (xgm_pool_used_count(pool) != 0U) {
+        return XGS_BUSY;
+    }
+    xgm_pool_deinit(pool);
+    return XGS_OK;
+}
+
 /**
  * \brief           Allocate one pool block for a fitting byte request
  */

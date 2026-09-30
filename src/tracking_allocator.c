@@ -36,9 +36,13 @@ static bool overlaps(const void *left, size_t left_size,
     return a <= b ? b - a < left_size : a - b < right_size;
 }
 
-static size_t saturated_add(size_t value, size_t increment)
+static size_t saturated_add(xgm_allocator_stats_t* stats, size_t value, size_t increment)
 {
-    return increment > SIZE_MAX - value ? SIZE_MAX : value + increment;
+    if (increment > SIZE_MAX - value) {
+        stats->saturated = true;
+        return SIZE_MAX;
+    }
+    return value + increment;
 }
 
 /**
@@ -48,9 +52,10 @@ static size_t saturated_add(size_t value, size_t increment)
  */
 static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
 {
-    stats->total_allocated = saturated_add(stats->total_allocated, size);
+    stats->total_allocated = saturated_add(stats, stats->total_allocated, size);
     stats->current_allocated += size;
-    stats->alloc_count = saturated_add(stats->alloc_count, 1U);
+    stats->alloc_count = saturated_add(stats, stats->alloc_count, 1U);
+    ++stats->live_blocks;
     if (stats->current_allocated > stats->peak_allocated) {
         stats->peak_allocated = stats->current_allocated;
     }
@@ -63,10 +68,10 @@ static void record_alloc(xgm_allocator_stats_t *stats, size_t size)
  */
 static void record_free(xgm_allocator_stats_t *stats, size_t size)
 {
-    stats->total_freed = saturated_add(stats->total_freed, size);
-    stats->current_allocated =
-        stats->current_allocated >= size ? stats->current_allocated - size : 0U;
-    stats->free_count = saturated_add(stats->free_count, 1U);
+    stats->total_freed = saturated_add(stats, stats->total_freed, size);
+    stats->current_allocated -= size;
+    stats->free_count = saturated_add(stats, stats->free_count, 1U);
+    --stats->live_blocks;
 }
 
 /**
@@ -80,6 +85,7 @@ static void reset_stats(xgm_allocator_stats_t *stats)
     stats->peak_allocated = stats->current_allocated;
     stats->alloc_count = 0U;
     stats->free_count = 0U;
+    stats->saturated = false;
 }
 
 /**
@@ -141,7 +147,14 @@ xgs_status_t xgm_tracking_allocator_init(xgm_tracking_allocator_t *tracker,
 void *xgm_tracking_alloc(xgm_tracking_allocator_t *tracker, size_t size)
 {
     if (tracker == NULL || tracker->stats == NULL || size == 0U ||
-        size > SIZE_MAX - sizeof(xgm_tracking_header_t)) {
+        size > SIZE_MAX - sizeof(xgm_tracking_header_t) ||
+        size > SIZE_MAX - tracker->stats->current_allocated ||
+        tracker->stats->live_blocks == SIZE_MAX) {
+        return NULL;
+    }
+    if (tracker->phase_count != 0U &&
+        (size > SIZE_MAX - tracker->phases[tracker->current_phase].current_allocated ||
+         tracker->phases[tracker->current_phase].live_blocks == SIZE_MAX)) {
         return NULL;
     }
     xgm_tracking_header_t *header =
@@ -204,4 +217,21 @@ const xgm_allocator_t *
 xgm_tracking_allocator_get_interface(xgm_tracking_allocator_t *tracker)
 {
     return tracker != NULL && tracker->stats != NULL ? &tracker->service : NULL;
+}
+
+size_t xgm_tracking_overhead(void)
+{
+    return sizeof(xgm_tracking_header_t);
+}
+
+xgs_status_t xgm_tracking_allocator_deinit(xgm_tracking_allocator_t* tracker)
+{
+    if (tracker == NULL || tracker->stats == NULL) {
+        return XGS_INVALID_ARGUMENT;
+    }
+    if (tracker->stats->live_blocks != 0U) {
+        return XGS_BUSY;
+    }
+    *tracker = (xgm_tracking_allocator_t){0};
+    return XGS_OK;
 }
