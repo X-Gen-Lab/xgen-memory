@@ -2,10 +2,10 @@
  * \file            test_arena.cpp
  * \brief           Caller-owned arena lifetime and overflow tests
  */
-#include <gtest/gtest.h>
-#include <xgen/memory/arena.h>
 #include <cstdint>
 #include <cstring>
+#include <gtest/gtest.h>
+#include <xgen/memory/arena.h>
 
 TEST(Arena, AlignedBumpsAndWholeLifetimeReset) {
     alignas(64) unsigned char storage[128]{};
