@@ -1,5 +1,5 @@
 include(GoogleTest)
-add_executable(xgm_tests unit/test_memory.cpp unit/baseline.c)
+add_executable(xgm_tests unit/test_memory.cpp unit/test_arena.cpp unit/baseline.c)
 set_target_properties(xgm_tests PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED YES C_EXTENSIONS NO CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
 target_link_libraries(xgm_tests PRIVATE xgm::allocator xgm::pool xgm::size_class xgm::tracking xgm::libc_allocator GTest::gtest_main)
 target_compile_definitions(xgm_tests PRIVATE XGM_TEST_LIBC)
