@@ -20,4 +20,4 @@ GCC 覆盖构建另外设置 `-DXGM_ENABLE_COVERAGE=ON`，运行完整测试后�
 
 Windows 使用对应编译器的开发环境：MSVC 要先启用 VS Developer Command Prompt；GCC 使用独立安装的 GCC/G++ 与对应 GoogleTest。clang-tidy 需要与编译数据库一致的目标头文件环境，不能将 MSVC CRT 与 MinGW 头混用。`XGEN_CLANG_TIDY` 等工具路径覆盖只选择已固定版本，不改变规则。
 
-修改公开布局时更新 ABI 身份；修改组件关系时覆盖源码、安装和预置 target 消费。模板工作流需要配置可访问的 `XGEN_QUALITY_REPOSITORY` 和 `XGEN_STATUS_REPOSITORY` 仓库变量，实际远端运行另行记录。
+CI 显式从 `X-Gen-Lab/xgen-quality` 获取配置中固定的工具提交，允许用 `XGEN_QUALITY_REPOSITORY` 覆盖为受控镜像。状态组件同样默认从 `X-Gen-Lab/xgen-status` 获取固定提交，可用 `XGEN_STATUS_REPOSITORY` 覆盖。仓库覆盖、固定提交不可获取或安装版本不符时失败；不跟随依赖主分支，远端验证与本地结果分别记录。
