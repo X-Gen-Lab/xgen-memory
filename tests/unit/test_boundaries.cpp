@@ -19,6 +19,7 @@ struct Backend {
     bool fail = false;
     bool misalign = false;
 };
+
 void* Allocate(void* context, size_t size) {
     auto* backend = static_cast<Backend*>(context);
     ++backend->allocations;
@@ -27,6 +28,7 @@ void* Allocate(void* context, size_t size) {
                ? nullptr
                : backend->bytes + (backend->misalign ? 1 : 0);
 }
+
 void Release(void* context, void*) {
     ++static_cast<Backend*>(context)->frees;
 }

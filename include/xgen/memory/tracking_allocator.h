@@ -149,4 +149,5 @@ xgm_tracking_allocator_get_interface(xgm_tracking_allocator_t* tracker);
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* XGM_TRACKING_ALLOCATOR_H */

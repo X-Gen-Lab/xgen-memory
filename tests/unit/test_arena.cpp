@@ -27,6 +27,7 @@ TEST(Arena, AlignedBumpsAndWholeLifetimeReset) {
     xgm_arena_deinit(&arena);
     EXPECT_EQ(xgm_arena_alloc(&arena, 1, 1), nullptr);
 }
+
 TEST(Arena, InvalidRequestsPreserveCursorAndFailedInitPreservesState) {
     unsigned char storage[32]{};
     xgm_arena_t arena{};

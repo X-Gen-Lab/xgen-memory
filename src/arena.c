@@ -40,17 +40,21 @@ void xgm_arena_reset(xgm_arena_t* arena) {
         arena->used = 0U;
     }
 }
+
 void xgm_arena_deinit(xgm_arena_t* arena) {
     if (arena != NULL) {
         *arena = (xgm_arena_t){0};
     }
 }
+
 size_t xgm_arena_used(const xgm_arena_t* arena) {
     return arena == NULL ? 0U : arena->used;
 }
+
 size_t xgm_arena_remaining(const xgm_arena_t* arena) {
     return arena == NULL ? 0U : arena->capacity - arena->used;
 }
+
 size_t xgm_arena_peak_used(const xgm_arena_t* arena) {
     return arena == NULL ? 0U : arena->peak_used;
 }

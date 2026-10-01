@@ -205,6 +205,7 @@ xgs_status_t xgm_size_class_deinit_owned(xgm_size_class_owned_t* state);
  * \return          Reserved bytes, or zero for NULL.
  */
 size_t xgm_size_class_used_memory(const xgm_size_class_allocator_t* state);
+
 /**
  * \brief           Query simultaneous peak reserved block bytes.
  * \param[in]       state: Initialized state, or NULL.
@@ -212,6 +213,7 @@ size_t xgm_size_class_used_memory(const xgm_size_class_allocator_t* state);
  *                  peaks.
  */
 size_t xgm_size_class_peak_memory(const xgm_size_class_allocator_t* state);
+
 /**
  * \brief           Reset aggregate and per-pool peaks to their current use.
  * \param[in,out]   state: Initialized state, or NULL.
@@ -230,6 +232,7 @@ void xgm_size_class_reset_stats(xgm_size_class_allocator_t* state);
  *                  order. No per-block header. Work is O(pool_count).
  */
 void* xgm_size_class_alloc(xgm_size_class_allocator_t* state, size_t size);
+
 /**
  * \brief           Return a block to its owning pool
  * \param[in,out]   state: Initialized allocator
@@ -240,6 +243,7 @@ void* xgm_size_class_alloc(xgm_size_class_allocator_t* state, size_t size);
  *                  status.
  */
 xgs_status_t xgm_size_class_free(xgm_size_class_allocator_t* state, void* ptr);
+
 /**
  * \brief           Invalidate allocator and descriptors once all blocks are
  *                  free
@@ -252,4 +256,5 @@ xgs_status_t xgm_size_class_deinit(xgm_size_class_allocator_t* state);
 #ifdef __cplusplus
 }
 #endif
+
 #endif

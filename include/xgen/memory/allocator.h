@@ -71,6 +71,7 @@ bool xgm_allocator_is_valid(const xgm_allocator_t* allocator);
  * \return          Aligned block, or NULL if size is zero or allocation fails
  */
 void* xgm_alloc(const xgm_allocator_t* allocator, size_t size);
+
 /**
  * \brief           Release through the same allocator that supplied the block
  * \param[in]       allocator: Allocator descriptor with both callbacks present
@@ -81,4 +82,5 @@ void xgm_free(const xgm_allocator_t* allocator, void* ptr);
 #ifdef __cplusplus
 }
 #endif
+
 #endif

@@ -14,15 +14,19 @@ int baseline_pool(void);
 int baseline_size_class(void);
 int baseline_tracking(void);
 }
+
 TEST(Migration, Allocator) {
     EXPECT_EQ(baseline_allocator(), 0);
 }
+
 TEST(Migration, Pool) {
     EXPECT_EQ(baseline_pool(), 0);
 }
+
 TEST(Migration, SizeClass) {
     EXPECT_EQ(baseline_size_class(), 0);
 }
+
 TEST(Migration, Tracking) {
     EXPECT_EQ(baseline_tracking(), 0);
 }
@@ -34,6 +38,7 @@ TEST(Pool, RejectsUnderalignedAllocatorAdapter) {
     auto service = xgm_pool_allocator(&pool);
     EXPECT_FALSE(xgm_allocator_is_valid(&service));
 }
+
 TEST(Tracking, RejectsAliasedAggregateAndPhasesWithoutMutation) {
     xgm_tracking_allocator_t tracker{};
     xgm_allocator_stats_t stats[2]{};
@@ -43,6 +48,7 @@ TEST(Tracking, RejectsAliasedAggregateAndPhasesWithoutMutation) {
               XGS_INVALID_ARGUMENT);
     EXPECT_EQ(stats[0].total_allocated, 17U);
 }
+
 TEST(Tracking, SaturatesHistoricalCounters) {
     xgm_tracking_allocator_t tracker{};
     xgm_allocator_stats_t stats{};
@@ -81,6 +87,7 @@ TEST(SizeClass, FallbackSkipsExhaustedClassesAndPreservesStrictDefault) {
     EXPECT_EQ(xgm_size_class_peak_memory(&state), 0U);
     EXPECT_EQ(xgm_size_class_deinit(&state), XGS_OK);
 }
+
 TEST(SizeClass, SeparateBuffersEmptyClassesAndOverlapValidation) {
     alignas(max_align_t) unsigned char small[32]{}, large[64]{};
     xgm_pool_t pools[3]{};
@@ -104,6 +111,7 @@ TEST(SizeClass, SeparateBuffersEmptyClassesAndOverlapValidation) {
               XGS_INVALID_ARGUMENT);
     EXPECT_EQ(std::memcmp(&state, &before, sizeof(state)), 0);
 }
+
 TEST(SizeClass, OwnedStorageIsExplicitAndCannotBeDestroyedWithLiveBlocks) {
     xgm_size_class_owned_t owned{};
     auto& state = owned.allocator;
@@ -119,6 +127,7 @@ TEST(SizeClass, OwnedStorageIsExplicitAndCannotBeDestroyedWithLiveBlocks) {
     EXPECT_EQ(xgm_size_class_free(&state, value), XGS_OK);
     EXPECT_EQ(xgm_size_class_deinit_owned(&owned), XGS_OK);
 }
+
 TEST(Tracking, LiveCountsSurviveResetAndDeinitRequiresNoLiveBlocks) {
     xgm_tracking_allocator_t tracker{};
     xgm_allocator_stats_t stats{}, phases[2]{};
@@ -140,6 +149,7 @@ TEST(Tracking, LiveCountsSurviveResetAndDeinitRequiresNoLiveBlocks) {
     EXPECT_GT(xgm_tracking_overhead(), 0U);
     EXPECT_EQ(xgm_tracking_allocator_deinit(&tracker), XGS_OK);
 }
+
 TEST(Pool, CheckedCloseAndStorageMeasure) {
     size_t block_size = 0, storage_size = 0;
     ASSERT_EQ(xgm_pool_measure(3, alignof(max_align_t), 4, &block_size,

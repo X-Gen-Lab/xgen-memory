@@ -16,6 +16,7 @@
  */
 typedef union {
     xgm_max_align_t alignment;
+
     struct {
         xgm_tracking_allocator_t* owner;
         size_t size;

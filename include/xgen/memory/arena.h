@@ -2,11 +2,14 @@
  * \file            arena.h
  * \brief           Caller-owned bounded storage with one shared lifetime
  */
+
 #ifndef XGM_ARENA_H
 #define XGM_ARENA_H
+
 #include <stddef.h>
 #include <stdint.h>
 #include <xgen/status/status.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,18 +65,21 @@ void* xgm_arena_alloc(xgm_arena_t* arena, size_t size, size_t alignment);
  *                  interrupt users.
  */
 void xgm_arena_reset(xgm_arena_t* arena);
+
 /**
  * \brief           Invalidate state and allocations without erasing borrowed
  *                  storage.
  * \param[in,out]   arena: Arena, or NULL; all users must already be stopped.
  */
 void xgm_arena_deinit(xgm_arena_t* arena);
+
 /**
  * \brief           Query consumed bytes including alignment padding.
  * \param[in]       arena: Arena, or NULL.
  * \return          Consumed bytes, or zero for NULL.
  */
 size_t xgm_arena_used(const xgm_arena_t* arena);
+
 /**
  * \brief           Query remaining raw bytes before request-specific
  *                  alignment.
@@ -81,13 +87,16 @@ size_t xgm_arena_used(const xgm_arena_t* arena);
  * \return          Remaining bytes, or zero for NULL.
  */
 size_t xgm_arena_remaining(const xgm_arena_t* arena);
+
 /**
  * \brief           Query maximum consumed bytes since initialization.
  * \param[in]       arena: Arena, or NULL.
  * \return          Peak bytes, or zero for NULL.
  */
 size_t xgm_arena_peak_used(const xgm_arena_t* arena);
+
 #ifdef __cplusplus
 }
 #endif
+
 #endif

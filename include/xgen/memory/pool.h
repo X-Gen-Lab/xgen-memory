@@ -80,12 +80,14 @@ xgs_status_t xgm_pool_deinit(xgm_pool_t* pool);
  */
 xgs_status_t xgm_pool_init(xgm_pool_t* pool, void* storage, size_t storage_size,
                            size_t block_size, size_t alignment, size_t count);
+
 /**
  * \brief           Remove one block from the bounded free list
  * \param[in,out]   pool: Caller-owned pool descriptor
  * \return          Matching object, or NULL when absent or unavailable
  */
 void* xgm_pool_alloc(xgm_pool_t* pool);
+
 /* NULL is accepted. Foreign, interior, or already-free blocks are rejected.
  * Double-free detection scans the bounded free list. */
 /**
@@ -96,6 +98,7 @@ void* xgm_pool_alloc(xgm_pool_t* pool);
  *                  failure
  */
 xgs_status_t xgm_pool_free(xgm_pool_t* pool, void* ptr);
+
 /**
  * \brief           Check whether a pointer is a block boundary in this pool
  * \param[in]       pool: Caller-owned pool descriptor
@@ -104,24 +107,28 @@ xgs_status_t xgm_pool_free(xgm_pool_t* pool, void* ptr);
  *                  false otherwise. This does not test allocation liveness.
  */
 bool xgm_pool_contains(const xgm_pool_t* pool, const void* ptr);
+
 /**
  * \brief           Query the number of available blocks
  * \param[in]       pool: Caller-owned pool descriptor
  * \return          Calculated or queried value
  */
 size_t xgm_pool_free_count(const xgm_pool_t* pool);
+
 /**
  * \brief           Query the number of live blocks
  * \param[in]       pool: Caller-owned pool descriptor
  * \return          Calculated or queried value
  */
 size_t xgm_pool_used_count(const xgm_pool_t* pool);
+
 /**
  * \brief           Query the peak simultaneous block use
  * \param[in]       pool: Caller-owned pool descriptor
  * \return          Calculated or queried value
  */
 size_t xgm_pool_peak_used(const xgm_pool_t* pool);
+
 /**
  * \brief           Reset peak use to the current live block count
  * \param[in,out]   pool: Caller-owned pool descriptor
@@ -141,4 +148,5 @@ xgm_allocator_t xgm_pool_allocator(xgm_pool_t* pool);
 #ifdef __cplusplus
 }
 #endif
+
 #endif

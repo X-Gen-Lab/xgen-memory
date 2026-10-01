@@ -47,9 +47,11 @@ xgs_status_t xgm_size_class_measure(const xgm_size_class_spec_t* specs,
 static void* service_alloc(void* ctx, size_t size) {
     return xgm_size_class_alloc(ctx, size);
 }
+
 static void service_free(void* ctx, void* ptr) {
     (void)xgm_size_class_free(ctx, ptr);
 }
+
 static void finish_init(xgm_size_class_policy_t policy,
                         xgm_size_class_allocator_t* state, xgm_pool_t* pools,
                         size_t count) {
@@ -99,6 +101,7 @@ xgs_status_t xgm_size_class_init_ex(xgm_size_class_allocator_t* state,
     finish_init(policy, state, pools, count);
     return XGS_OK;
 }
+
 /* NOLINTEND(bugprone-easily-swappable-parameters) */
 
 xgs_status_t xgm_size_class_init(xgm_size_class_allocator_t* state,
@@ -291,9 +294,11 @@ xgs_status_t xgm_size_class_deinit_owned(xgm_size_class_owned_t* state) {
 size_t xgm_size_class_used_memory(const xgm_size_class_allocator_t* state) {
     return state != NULL ? state->used_memory : 0U;
 }
+
 size_t xgm_size_class_peak_memory(const xgm_size_class_allocator_t* state) {
     return state != NULL ? state->peak_memory : 0U;
 }
+
 void xgm_size_class_reset_stats(xgm_size_class_allocator_t* state) {
     if (state != NULL) {
         state->peak_memory = state->used_memory;

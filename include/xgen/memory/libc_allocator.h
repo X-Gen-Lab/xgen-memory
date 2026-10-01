@@ -23,4 +23,5 @@ const xgm_allocator_t* xgm_allocator_libc(void);
 #ifdef __cplusplus
 }
 #endif
+
 #endif
